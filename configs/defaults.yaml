@@ -1,0 +1,72 @@
+project:
+  name: ScandalClassify
+  timezone: Asia/Seoul
+  language: en
+
+paths:
+  data_root: ./data
+  raw_dir: ./data/raw
+  processed_dir: ./data/processed
+  outputs_dir: ./outputs
+  artifacts_dir: ./artifacts
+  logs_dir: ./outputs/logs
+
+input:
+  source_csv: ""
+  date_filter:
+    start: null
+    end: null
+    months: []
+
+preprocess:
+  drop_null: true
+  deduplicate_on: ["title", "content", "published_at"]
+  min_content_chars: 20
+
+grouping:
+  strategy: sliding_window
+  window_size: 700
+  overlap_size: 200
+  min_verifications: 3
+  greedy:
+    batch_size: 600
+
+openai:
+  api_key_env: OPENAI_API_KEY
+  model: gpt-4o
+  temperature: 0.2
+  max_output_tokens: 4096
+  request_timeout_s: 60
+  rpm_soft_limit: 50
+  concurrency: 3
+  response_format: json_schema
+
+token_budget:
+  context_window: 128000
+  system_prompt_tokens: 2000
+  safety_margin: 0.1
+  sample_size_for_stats: 1000
+
+inference:
+  articles_per_call: 100
+  rounds: 3
+  vote_threshold: 2
+  fields: ["article_id", "scandal_type"]
+  scandal_labels: ["정치", "연예", "none"]
+
+reporting:
+  aggregate_by: ["day", "month"]
+  output_files:
+    results_csv: outputs/scandal_results.csv
+    aggregated_csv: outputs/scandal_results_aggregated.csv
+    trends_csv: outputs/trends.csv
+    report_md: outputs/report.md
+
+checkpoints:
+  enabled: true
+  interval_batches: 50
+  dir: outputs/checkpoints
+
+seed: 42
+
+
